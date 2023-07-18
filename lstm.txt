@@ -1,0 +1,106 @@
+%%
+%序列的前 77.5% 用于训练，后 22.5% 用于测试
+Y1 = PekingTemp;
+data = Y1';
+numTimeStepsTrain = floor(0.775*numel(data));
+dataTrain = data(1:numTimeStepsTrain+1);
+dataTest = data(numTimeStepsTrain+1:end);
+ 
+%数据预处理，将训练数据标准化为具有零均值和单位方差。
+mu = mean(dataTrain);
+sig = std(dataTrain);
+dataTrainStandardized = (dataTrain - mu) / sig;
+ 
+%输入LSTM的时间序列交替一个时间步
+XTrain = dataTrainStandardized(1:end-1);
+YTrain = dataTrainStandardized(2:end);
+
+%%
+%创建LSTM回归网络，指定LSTM层的隐含单元个数96*3
+%序列预测，因此，输入一维，输出一维
+numFeatures = 1;
+numResponses = 1;
+numHiddenUnits = 96*3;
+ 
+layers = [ ...
+    sequenceInputLayer(numFeatures)
+    lstmLayer(numHiddenUnits)
+    fullyConnectedLayer(numResponses)
+    regressionLayer];
+ 
+%指定训练选项，求解器设置为adam， 250 轮训练。
+%梯度阈值设置为 1。指定初始学习率 0.005，在 125 轮训练后通过乘以因子 0.2 来降低学习率。
+options = trainingOptions('adam', ...
+    'MaxEpochs',250, ...
+    'GradientThreshold',1, ...
+    'InitialLearnRate',0.005, ...
+    'LearnRateSchedule','piecewise', ...
+    'LearnRateDropPeriod',125, ...
+    'LearnRateDropFactor',0.2, ...
+    'Verbose',0, ...
+    'Plots','training-progress');
+%训练LSTM
+net = trainNetwork(XTrain,YTrain,layers,options);
+
+dataTestStandardized = (dataTest - mu) / sig;
+XTest = dataTestStandardized(1:end-1);
+YTest = dataTest(2:end);
+
+net = resetState(net);
+net = predictAndUpdateState(net,XTrain);
+ 
+YPred = [];
+numTimeStepsTest = numel(XTest);
+for i = 1:numTimeStepsTest
+    [net,YPred(:,i)] = predictAndUpdateState(net,XTest(:,i),'ExecutionEnvironment','cpu');
+end
+ 
+%使用先前计算的参数对预测去标准化。
+YPred = sig*YPred + mu;
+ 
+%计算均方根误差 (RMSE)。
+rmse = sqrt(mean((YPred-YTest).^2))
+
+%将预测值与测试数据进行比较。
+figure
+subplot(2,1,1)
+plot(YTest)
+hold on
+plot(YPred,'.-')
+hold off
+legend(["Observed" "Predicted"])
+ylabel("Loads")
+title("Forecast with Updates")
+ 
+subplot(2,1,2)
+stem(YPred - YTest)
+xlabel("Days")
+ylabel("Error")
+title("RMSE = " + rmse)
+ 
+ 
+figure
+subplot(2,1,1)
+plot(dataTrain(1:end-1))
+hold on
+idx = numTimeStepsTrain:(numTimeStepsTrain+numTimeStepsTest);
+plot(idx,[data(numTimeStepsTrain) YPred],'.-')
+hold off
+xlabel("Days")
+ylabel("Loads")
+title("Forecast")
+legend(["Observed" "Forecast"])
+subplot(2,1,2)
+plot(data)
+xlabel("Days")
+ylabel("Loads")
+title("Daily load")
+
+
+
+mae = mean(abs(YReal - YPred))
+sse = sum((YPred - YReal).^2)
+rmse = sqrt(mean((YPred-YReal).^2))
+meap = mean(abs((YReal - YPred)./YReal))*100  
+
+
