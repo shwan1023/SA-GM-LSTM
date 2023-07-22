@@ -1,0 +1,41 @@
+卷 Engineering 的文件夹 PATH 列表
+卷序列号为 C2E3-BB96
+X:.
+│  file_tree.txt
+│  init.py
+│  main.py
+│  
+├─.idea
+│  │  .gitignore
+│  │  .name
+│  │  misc.xml
+│  │  modules.xml
+│  │  other.xml
+│  │  SA-GM-LSTM.iml
+│  │  workspace.xml
+│  │  
+│  └─inspectionProfiles
+│          profiles_settings.xml
+│          
+├─data
+│      Fourier.mat
+│      PekingTemp.mat
+│      
+├─funcs
+│      Grey_prediction_with_buffer.py
+│      Holt-Winters.py
+│      Linear.py
+│      Lstm_forecast.py
+│      Simulated_annealing.py
+│      
+└─methods
+    ├─AnsGetting
+    │      BestAnsFinding.py
+    │      LSTM_Training & Forecasting.py
+    │      
+    └─SeqSearching
+            AnnealingJudgement.py
+            Hw2Sa.py
+            Seq2Hw.py
+            TimeWindowsBuilding.py
+            
